@@ -1,6 +1,8 @@
 package com.orderfulfillment;
 import com.orderfulfillment.service.UserService;
 import org.junit.jupiter.api.Test;
+import com.orderfulfillment.entity.OrderStatus;
+import com.orderfulfillment.entity.Order;
 import com.orderfulfillment.entity.User;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
+import com.orderfulfillment.repository.OrderRepository;
+import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import com.orderfulfillment.repository.UserRepository;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -19,6 +24,9 @@ class OrderFulfillmentApplicationTests {
 	private UserService userService;
 	@Autowired
 	private UserRepository userRepository;
+	@Autowired
+	private OrderRepository orderRepository;
+
 	@Test
 	void contextLoads() {
 	}
@@ -77,6 +85,27 @@ class OrderFulfillmentApplicationTests {
 		User savedUser = userService.saveUser(user);
 		userService.deleteUser(savedUser.getId());
 		assertFalse(userRepository.existsById(savedUser.getId()));
+	}
+
+	@Test 
+	void shouldSaveOrderWithUser() {
+		User user = new User();
+		user.setName("Alex Smith");
+		user.setEmail("alex@example.com");
+		user.setPassword("password123");
+		user.setRole("WAREHOUSE");
+		
+		User savedUser = userService.saveUser(user);
+
+		Order order = new Order();
+		order.setUser(savedUser);
+		order.setOrderDate(LocalDateTime.now());
+		order.setTotalAmount(new BigDecimal("1599.44"));
+		order.setStatus(OrderStatus.PENDING);
+
+		Order savedOrder = orderRepository.save(order);
+		assertNotNull(savedOrder.getId());
+		assertEquals(savedUser.getId(), savedOrder.getUser().getId());
 	}
 }
 	
