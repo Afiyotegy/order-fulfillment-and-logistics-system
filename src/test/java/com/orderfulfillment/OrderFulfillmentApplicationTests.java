@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.math.BigDecimal;
 import com.orderfulfillment.repository.UserRepository;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import com.orderfulfillment.service.OrderService;
 
 @SpringBootTest
 @Transactional
@@ -26,6 +27,8 @@ class OrderFulfillmentApplicationTests {
 	private UserRepository userRepository;
 	@Autowired
 	private OrderRepository orderRepository;
+	@Autowired
+	private OrderService orderService;
 
 	@Test
 	void contextLoads() {
@@ -106,6 +109,126 @@ class OrderFulfillmentApplicationTests {
 		Order savedOrder = orderRepository.save(order);
 		assertNotNull(savedOrder.getId());
 		assertEquals(savedUser.getId(), savedOrder.getUser().getId());
+	}
+
+	@Test
+	void shouldCreateOrder() {
+    User user = new User();
+    user.setName("Robert Smith");
+    user.setEmail("robert@example.com");
+    user.setPassword("password123");
+    user.setRole("WAREHOUSE");
+
+    User savedUser = userService.saveUser(user);
+
+    Order order = new Order();
+    order.setUser(savedUser);
+    order.setOrderDate(LocalDateTime.now());
+    order.setTotalAmount(new BigDecimal("1599.44"));
+    order.setStatus(OrderStatus.PENDING);
+
+    Order savedOrder = orderService.createOrder(order);
+
+    assertNotNull(savedOrder.getId());
+    assertEquals(savedUser.getId(), savedOrder.getUser().getId());
+	}
+
+	@Test
+	void shouldRetrieveAllOrders() {
+    User user = new User();
+    user.setName("Robert Smith");
+    user.setEmail("robert@example.com");
+    user.setPassword("password123");
+    user.setRole("WAREHOUSE");
+
+    User savedUser = userService.saveUser(user);
+
+    Order order = new Order();
+    order.setUser(savedUser);
+    order.setOrderDate(LocalDateTime.now());
+    order.setTotalAmount(new BigDecimal("2499.00"));
+    order.setStatus(OrderStatus.PENDING);
+
+    orderService.createOrder(order);
+
+    List<Order> orders = orderService.getAllOrders();
+
+    assertTrue(orders.stream()
+            .anyMatch(o -> o.getTotalAmount().equals(new BigDecimal("2499.00"))));
+	}
+
+	@Test 
+	void shouldRetrieveOrderById() {
+		User user = new User();
+		user.setName("Sarah Smith");
+		user.setEmail("sarah@example.com");
+		user.setPassword("password123");
+		user.setRole("WAREHOUSE");
+
+		User savedUser = userService.saveUser(user);
+
+		Order order = new Order();
+		order.setUser(savedUser);
+		order.setOrderDate(LocalDateTime.now());
+		order.setTotalAmount(new BigDecimal("2499.00"));
+		order.setStatus(OrderStatus.PENDING);
+
+		Order savedOrder = orderService.createOrder(order);
+
+		Order retrievedOrder = orderService.getOrderById(savedOrder.getId());
+
+		assertEquals(new BigDecimal("2499.00"), retrievedOrder.getTotalAmount());
+		assertEquals(savedOrder.getId(), retrievedOrder.getId());
+	}
+
+	@Test 
+	void shouldUpdateOrder() {
+		User user = new User();
+		user.setName("Daniel Smith");
+		user.setEmail("daniel@example.com");
+		user.setPassword("password123");
+		user.setRole("WAREHOUSE");
+
+		User savedUser = userService.saveUser(user);
+
+		Order order = new Order();
+		order.setUser(savedUser);
+		order.setOrderDate(LocalDateTime.now());
+		order.setTotalAmount(new BigDecimal("2499.00"));
+		order.setStatus(OrderStatus.PENDING);
+
+		Order savedOrder = orderService.createOrder(order);
+
+		savedOrder.setTotalAmount(new BigDecimal("2999.00"));
+		savedOrder.setStatus(OrderStatus.PROCESSING);
+
+		Order updatedOrder = orderService.updateOrder(savedOrder.getId(), savedOrder);
+
+		assertEquals(new BigDecimal("2999.00"), updatedOrder.getTotalAmount());
+		assertEquals(OrderStatus.PROCESSING, updatedOrder.getStatus());
+	}
+
+	@Test 
+	void shouldDeleteOrder() {
+		User user = new User();
+		user.setName("Emma Smith");
+		user.setEmail("emma@example.com");
+		user.setPassword("password123");
+		user.setRole("WAREHOUSE");
+
+		User savedUser = userService.saveUser(user);
+
+		Order order = new Order();
+		order.setUser(savedUser);
+		order.setOrderDate(LocalDateTime.now());
+		order.setTotalAmount(new BigDecimal("1500.00"));
+		order.setStatus(OrderStatus.PENDING);
+
+		Order savedOrder = orderService.createOrder(order);
+
+		orderService.deleteOrder(savedOrder.getId());
+
+		assertFalse(orderRepository.existsById(savedOrder.getId()));
 	}
 }
 	
