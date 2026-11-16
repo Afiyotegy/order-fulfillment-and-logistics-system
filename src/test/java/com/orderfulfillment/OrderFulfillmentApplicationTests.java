@@ -1,234 +1,227 @@
 package com.orderfulfillment;
-import com.orderfulfillment.service.UserService;
-import org.junit.jupiter.api.Test;
-import com.orderfulfillment.entity.OrderStatus;
+import com.orderfulfillment.entity.Role;
 import com.orderfulfillment.entity.Order;
+import com.orderfulfillment.entity.OrderStatus;
 import com.orderfulfillment.entity.User;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import com.orderfulfillment.repository.OrderRepository;
+import com.orderfulfillment.repository.UserRepository;
+import com.orderfulfillment.service.OrderService;
+import com.orderfulfillment.service.UserService;
+import com.orderfulfillment.entity.Address;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import java.util.List;
-import com.orderfulfillment.repository.OrderRepository;
-import java.time.LocalDateTime;
+import com.orderfulfillment.repository.AddressRepository;
 import java.math.BigDecimal;
-import com.orderfulfillment.repository.UserRepository;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import com.orderfulfillment.service.OrderService;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @Transactional
 class OrderFulfillmentApplicationTests {
-	@Autowired 
-	private UserService userService;
-	@Autowired
-	private UserRepository userRepository;
-	@Autowired
-	private OrderRepository orderRepository;
-	@Autowired
-	private OrderService orderService;
 
-	@Test
-	void contextLoads() {
-	}
+    @Autowired
+    private UserService userService;
 
-	@Test 
-	void shouldSaveUser() {
-		User user = new User();
+    @Autowired
+    private UserRepository userRepository;
 
-		user.setName("John Smith");
-		user.setEmail("john@example.com");
-		user.setPassword("password123");
-		user.setRole("ADMIN");
+    @Autowired
+    private OrderRepository orderRepository;
 
-		User savedUser = userService.saveUser(user);
+    @Autowired
+    private OrderService orderService;
 
-		assertNotNull(savedUser.getId());
-	}
+    @Autowired
+    private AddressRepository addressRepository;
+    @Test
+    void contextLoads() {
+    }
 
-	@Test 
-	void shouldRetrieveUserById() {
-		User user = new User();
-		user.setName("Jane Smith");
-		user.setEmail("jane@example.com");
-		user.setPassword("password123");
-		user.setRole("WAREHOUSE");
+    // USER TESTS
 
-		User savedUser = userService.saveUser(user);
-		User retrievedUser = userService.getUserById(savedUser.getId());
+    @Test
+    void shouldSaveUser() {
+        String email = "john-" + java.util.UUID.randomUUID() + "@example.com";
 
-		assertEquals("jane@example.com", retrievedUser.getEmail());
-	}
+        User user = createTestUser(email);
 
-	@Test 
-	void shouldRetrieveAllUsers() {
-		User user = new User();
+        User savedUser = userService.saveUser(user);
 
-		user.setName("David Smith");
-		user.setEmail("david@example.com");
-		user.setPassword("password123");
-		user.setRole("SHIPPER");
-		userService.saveUser(user);
-		List<User> users = userService.getAllUsers();
+        assertNotNull(savedUser.getId());
+        assertEquals(email, savedUser.getEmail());
+    }
 
-		assertTrue(users.stream().anyMatch(u -> u.getEmail().equals("david@example.com")));
-	}
+    @Test
+    void shouldRetrieveUserById() {
+        User user = createTestUser("jane@example.com");
 
-	@Test
-	void shouldDeleteUser() {
-		User user = new User();
+        User savedUser = userService.saveUser(user);
+        User retrievedUser = userService.getUserById(savedUser.getId());
 
-		user.setName("Michael Smith");
-		user.setEmail("michael@example.com");
-		user.setPassword("password123");
-		user.setRole("SHIPPER");
+        assertEquals("jane@example.com", retrievedUser.getEmail());
+    }
 
-		User savedUser = userService.saveUser(user);
-		userService.deleteUser(savedUser.getId());
-		assertFalse(userRepository.existsById(savedUser.getId()));
-	}
+    @Test
+    void shouldRetrieveAllUsers() {
+        User user = createTestUser("david@example.com");
 
-	@Test 
-	void shouldSaveOrderWithUser() {
-		User user = new User();
-		user.setName("Alex Smith");
-		user.setEmail("alex@example.com");
-		user.setPassword("password123");
-		user.setRole("WAREHOUSE");
-		
-		User savedUser = userService.saveUser(user);
+        userService.saveUser(user);
 
-		Order order = new Order();
-		order.setUser(savedUser);
-		order.setOrderDate(LocalDateTime.now());
-		order.setTotalAmount(new BigDecimal("1599.44"));
-		order.setStatus(OrderStatus.PENDING);
+        List<User> users = userService.getAllUsers();
 
-		Order savedOrder = orderRepository.save(order);
-		assertNotNull(savedOrder.getId());
-		assertEquals(savedUser.getId(), savedOrder.getUser().getId());
-	}
+        assertTrue(users.stream()
+                .anyMatch(u -> u.getEmail().equals("david@example.com")));
+    }
 
-	@Test
-	void shouldCreateOrder() {
-    User user = new User();
-    user.setName("Robert Smith");
-    user.setEmail("robert@example.com");
-    user.setPassword("password123");
-    user.setRole("WAREHOUSE");
+    @Test
+    void shouldDeleteUser() {
+        User user = createTestUser("michael@example.com");
 
-    User savedUser = userService.saveUser(user);
+        User savedUser = userService.saveUser(user);
 
-    Order order = new Order();
-    order.setUser(savedUser);
-    order.setOrderDate(LocalDateTime.now());
-    order.setTotalAmount(new BigDecimal("1599.44"));
-    order.setStatus(OrderStatus.PENDING);
+        userService.deleteUser(savedUser.getId());
 
-    Order savedOrder = orderService.createOrder(order);
+        assertFalse(userRepository.existsById(savedUser.getId()));
+    }
 
-    assertNotNull(savedOrder.getId());
-    assertEquals(savedUser.getId(), savedOrder.getUser().getId());
-	}
+    // ORDER TESTS
 
-	@Test
-	void shouldRetrieveAllOrders() {
-    User user = new User();
-    user.setName("Robert Smith");
-    user.setEmail("robert@example.com");
-    user.setPassword("password123");
-    user.setRole("WAREHOUSE");
+    @Test
+    void shouldSaveOrderWithCustomerDetails() {
+        Order order = createTestOrder("ORD-001",
+                new BigDecimal("1599.44"));
 
-    User savedUser = userService.saveUser(user);
+        Order savedOrder = orderRepository.save(order);
 
-    Order order = new Order();
-    order.setUser(savedUser);
-    order.setOrderDate(LocalDateTime.now());
-    order.setTotalAmount(new BigDecimal("2499.00"));
-    order.setStatus(OrderStatus.PENDING);
+        assertNotNull(savedOrder.getId());
+        assertEquals("ORD-001", savedOrder.getOrderNumber());
+        assertEquals("Alex Smith", savedOrder.getCustomerName());
+        assertEquals("alex@example.com", savedOrder.getCustomerEmail());
+    }
 
-    orderService.createOrder(order);
+    @Test
+    void shouldCreateOrder() {
+        Order order = createTestOrder("ORD-002",
+                new BigDecimal("1599.44"));
 
-    List<Order> orders = orderService.getAllOrders();
+        Order savedOrder = orderService.createOrder(order);
 
-    assertTrue(orders.stream()
-            .anyMatch(o -> o.getTotalAmount().equals(new BigDecimal("2499.00"))));
-	}
+        assertNotNull(savedOrder.getId());
+        assertEquals("ORD-002", savedOrder.getOrderNumber());
+    }
 
-	@Test 
-	void shouldRetrieveOrderById() {
-		User user = new User();
-		user.setName("Sarah Smith");
-		user.setEmail("sarah@example.com");
-		user.setPassword("password123");
-		user.setRole("WAREHOUSE");
+    @Test
+    void shouldRetrieveAllOrders() {
+        Order order = createTestOrder("ORD-003",
+                new BigDecimal("2499.00"));
 
-		User savedUser = userService.saveUser(user);
+        orderService.createOrder(order);
 
-		Order order = new Order();
-		order.setUser(savedUser);
-		order.setOrderDate(LocalDateTime.now());
-		order.setTotalAmount(new BigDecimal("2499.00"));
-		order.setStatus(OrderStatus.PENDING);
+        List<Order> orders = orderService.getAllOrders();
 
-		Order savedOrder = orderService.createOrder(order);
+        assertTrue(orders.stream()
+                .anyMatch(o -> o.getOrderNumber().equals("ORD-003")));
+    }
 
-		Order retrievedOrder = orderService.getOrderById(savedOrder.getId());
+    @Test
+    void shouldRetrieveOrderById() {
+        Order order = createTestOrder("ORD-004",
+                new BigDecimal("2499.00"));
 
-		assertEquals(new BigDecimal("2499.00"), retrievedOrder.getTotalAmount());
-		assertEquals(savedOrder.getId(), retrievedOrder.getId());
-	}
+        Order savedOrder = orderService.createOrder(order);
 
-	@Test 
-	void shouldUpdateOrder() {
-		User user = new User();
-		user.setName("Daniel Smith");
-		user.setEmail("daniel@example.com");
-		user.setPassword("password123");
-		user.setRole("WAREHOUSE");
+        Order retrievedOrder = orderService.getOrderById(savedOrder.getId());
 
-		User savedUser = userService.saveUser(user);
+        assertEquals("ORD-004", retrievedOrder.getOrderNumber());
+        assertEquals(new BigDecimal("2499.00"),
+                retrievedOrder.getTotalAmount());
+    }
 
-		Order order = new Order();
-		order.setUser(savedUser);
-		order.setOrderDate(LocalDateTime.now());
-		order.setTotalAmount(new BigDecimal("2499.00"));
-		order.setStatus(OrderStatus.PENDING);
+    @Test
+    void shouldUpdateOrder() {
+        Order order = createTestOrder("ORD-005",
+                new BigDecimal("2499.00"));
 
-		Order savedOrder = orderService.createOrder(order);
+        Order savedOrder = orderService.createOrder(order);
 
-		savedOrder.setTotalAmount(new BigDecimal("2999.00"));
-		savedOrder.setStatus(OrderStatus.PROCESSING);
+        savedOrder.setTotalAmount(new BigDecimal("2999.00"));
+        savedOrder.setStatus(OrderStatus.PROCESSING);
+        savedOrder.setNotes("Updated order");
 
-		Order updatedOrder = orderService.updateOrder(savedOrder.getId(), savedOrder);
+        Order updatedOrder = orderService.updateOrder(
+                savedOrder.getId(), savedOrder);
 
-		assertEquals(new BigDecimal("2999.00"), updatedOrder.getTotalAmount());
-		assertEquals(OrderStatus.PROCESSING, updatedOrder.getStatus());
-	}
+        assertEquals(new BigDecimal("2999.00"),
+                updatedOrder.getTotalAmount());
+        assertEquals(OrderStatus.PROCESSING, updatedOrder.getStatus());
+        assertEquals("Updated order", updatedOrder.getNotes());
+    }
 
-	@Test 
-	void shouldDeleteOrder() {
-		User user = new User();
-		user.setName("Emma Smith");
-		user.setEmail("emma@example.com");
-		user.setPassword("password123");
-		user.setRole("WAREHOUSE");
+    @Test
+    void shouldDeleteOrder() {
+        Order order = createTestOrder("ORD-006",
+                new BigDecimal("1500.00"));
 
-		User savedUser = userService.saveUser(user);
+        Order savedOrder = orderService.createOrder(order);
 
-		Order order = new Order();
-		order.setUser(savedUser);
-		order.setOrderDate(LocalDateTime.now());
-		order.setTotalAmount(new BigDecimal("1500.00"));
-		order.setStatus(OrderStatus.PENDING);
+        orderService.deleteOrder(savedOrder.getId());
 
-		Order savedOrder = orderService.createOrder(order);
+        assertFalse(orderRepository.existsById(savedOrder.getId()));
+    }
 
-		orderService.deleteOrder(savedOrder.getId());
+    // HELPER METHODS
 
-		assertFalse(orderRepository.existsById(savedOrder.getId()));
-	}
+    private User createTestUser(String email) {
+        User user = new User();
+
+        user.setName("Test User");
+        user.setEmail(email);
+        user.setPasswordHash("test-hash");
+        user.setRole(Role.CUSTOMER);
+        user.setPhone("9876543210");
+
+        return user;
+    }
+
+    private Order createTestOrder(String orderNumber, BigDecimal amount) {
+
+        User user = createTestUser("alex@example.com");
+        User savedUser = userRepository.save(user);
+
+        Address address = new Address();
+        address.setUser(savedUser);
+        address.setAddressType("HOME");
+        address.setRecipientName("Alex Smith");
+        address.setPhone("9876543210");
+        address.setAddressLine1("123 Main Street");
+        address.setCity("Kochi");
+        address.setState("Kerala");
+        address.setPostalCode("682001");
+        address.setCountry("India");
+
+        Address savedAddress = addressRepository.save(address);
+
+        Order order = new Order();
+
+        order.setOrderNumber(orderNumber);
+        order.setUser(savedUser);
+        order.setShippingAddress(savedAddress);
+        order.setCustomerName("Alex Smith");
+        order.setCustomerEmail("alex@example.com");
+        order.setCustomerPhone("9876543210");
+        order.setShippingAddressSnapshot("123 Main Street, Kochi, Kerala, 682001, India");
+        order.setOrderDate(LocalDateTime.now());
+        order.setTotalAmount(amount);
+        order.setStatus(OrderStatus.PENDING);
+        order.setNotes("Test order");
+
+        return order;
+    }
 }
-	
