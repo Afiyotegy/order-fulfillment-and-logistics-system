@@ -195,7 +195,7 @@ class OrderFulfillmentApplicationTests {
         entityManager.persist(product);
 
         Order order = createTestOrder(
-                "ORD-007", new BigDecimal("1999.00"));
+                "ORD-007", new BigDecimal("999.00"));
 
         OrderItem item = createTestOrderItem(
                 product, 2, new BigDecimal("499.50"));
