@@ -16,6 +16,11 @@ import com.orderfulfillment.repository.AddressRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.orderfulfillment.entity.OrderItem;
+import com.orderfulfillment.entity.Product;
+import com.orderfulfillment.repository.OrderItemRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,6 +39,12 @@ class OrderFulfillmentApplicationTests {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private OrderItemRepository orderItemRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Autowired
     private OrderService orderService;
@@ -176,6 +187,54 @@ class OrderFulfillmentApplicationTests {
         assertFalse(orderRepository.existsById(savedOrder.getId()));
     }
 
+    // ORDER ITEM TESTS
+
+    @Test
+    void shouldSaveOrderItem() {
+        Product product = createTestProduct();
+        entityManager.persist(product);
+
+        Order order = createTestOrder(
+                "ORD-007", new BigDecimal("1999.00"));
+
+        OrderItem item = createTestOrderItem(
+                product, 2, new BigDecimal("499.50"));
+
+        order.addOrderItem(item);
+
+        Order savedOrder = orderRepository.save(order);
+
+        assertNotNull(savedOrder.getOrderItems().get(0).getId());
+        assertEquals("Test Product",
+                savedOrder.getOrderItems().get(0).getProductName());
+        assertEquals(new BigDecimal("999.00"),
+                savedOrder.getOrderItems().get(0).getSubtotal());
+    }
+
+    @Test
+    void shouldRetrieveOrderItemsByOrderId() {
+        Product product = createTestProduct();
+        entityManager.persist(product);
+
+        Order order = createTestOrder(
+                "ORD-008", new BigDecimal("999.00"));
+
+        OrderItem item = createTestOrderItem(
+                product, 2, new BigDecimal("499.50"));
+
+        order.addOrderItem(item);
+
+        Order savedOrder = orderRepository.save(order);
+
+        List<OrderItem> items =
+                orderItemRepository.findByOrderId(savedOrder.getId());
+
+        assertEquals(1, items.size());
+        assertEquals("Test Product", items.get(0).getProductName());
+        assertEquals(product.getId(), items.get(0).getProduct().getId());
+        assertEquals(savedOrder.getId(), items.get(0).getOrder().getId());
+    }
+
     // HELPER METHODS
 
     private User createTestUser(String email) {
@@ -223,5 +282,31 @@ class OrderFulfillmentApplicationTests {
         order.setNotes("Test order");
 
         return order;
+    }
+    private Product createTestProduct() {
+        Product product = new Product();
+
+        product.setName("Test Product");
+        product.setSku("TEST-" + java.util.UUID.randomUUID());
+        product.setDescription("Product created for testing");
+        product.setPrice(new BigDecimal("499.50"));
+        product.setWeight(new BigDecimal("0.500"));
+
+        return product;
+    }
+
+    private OrderItem createTestOrderItem(
+            Product product, int quantity, BigDecimal unitPrice) {
+
+        OrderItem item = new OrderItem();
+
+        item.setProduct(product);
+        item.setProductName(product.getName());
+        item.setSku(product.getSku());
+        item.setQuantity(quantity);
+        item.setUnitPrice(unitPrice);
+        item.setSubtotal(unitPrice.multiply(BigDecimal.valueOf(quantity)));
+
+        return item;
     }
 }

@@ -3,6 +3,8 @@ package com.orderfulfillment.entity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
@@ -55,6 +57,9 @@ public class Order {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
@@ -170,5 +175,19 @@ public class Order {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public List<OrderItem> getOrderItems() {
+    return orderItems;
+    }
+
+    public void addOrderItem(OrderItem orderItem) {
+    orderItems.add(orderItem);
+    orderItem.setOrder(this);
+    }
+
+    public void removeOrderItem(OrderItem orderItem) {
+    orderItems.remove(orderItem);
+    orderItem.setOrder(null);
     }
 }
